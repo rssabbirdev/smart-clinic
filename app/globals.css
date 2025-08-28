@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .kiosk-button {
+    @apply bg-clinic-primary text-white font-bold py-6 px-8 rounded-lg text-kiosk-lg hover:bg-clinic-secondary transition-colors duration-200 shadow-lg;
+  }
+  
+  .kiosk-button-secondary {
+    @apply bg-gray-200 text-gray-800 font-bold py-6 px-8 rounded-lg text-kiosk-lg hover:bg-gray-300 transition-colors duration-200 shadow-lg;
+  }
+  
+  .kiosk-button-emergency {
+    @apply bg-clinic-emergency text-white font-bold py-6 px-8 rounded-lg text-kiosk-lg hover:bg-red-700 transition-colors duration-200 shadow-lg animate-pulse;
+  }
+  
+  .kiosk-card {
+    @apply bg-white rounded-xl shadow-xl p-8 border border-gray-200;
+  }
+  
+  .kiosk-input {
+    @apply w-full px-6 py-4 text-kiosk-base border-2 border-gray-300 rounded-lg focus:border-clinic-primary focus:outline-none transition-colors duration-200;
+  }
+  
+  .kiosk-label {
+    @apply block text-kiosk-base font-semibold text-gray-700 mb-2;
+  }
+  
+  .queue-item {
+    @apply bg-white rounded-lg shadow-md p-6 border-l-4 transition-all duration-200 hover:shadow-lg;
+  }
+  
+  .queue-item-emergency {
+    @apply border-l-clinic-emergency bg-red-50;
+  }
+  
+  .queue-item-waiting {
+    @apply border-l-clinic-primary bg-blue-50;
+  }
+  
+  .queue-item-in-progress {
+    @apply border-l-clinic-warning bg-yellow-50;
+  }
+  
+  .queue-item-completed {
+    @apply border-l-clinic-success bg-green-50;
+  }
+}
+
+/* Custom scrollbar for kiosk */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Auto logout timer animation */
+.auto-logout-timer {
+  background: linear-gradient(90deg, #10b981 0%, #ef4444 100%);
+  background-size: 200% 100%;
+  animation: timer-progress 120s linear forwards;
+}
+
+@keyframes timer-progress {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 0%; }
+}

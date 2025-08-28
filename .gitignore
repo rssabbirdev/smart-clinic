@@ -1,0 +1,14 @@
+build
+dist / media
+node_modules
+.DS_Store
+.env.local
+.next
+.vercel
+
+# Payload default media upload directory
+public/media/
+
+
+.vercel
+node_modules
