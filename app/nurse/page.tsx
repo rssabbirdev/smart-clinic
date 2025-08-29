@@ -2,14 +2,14 @@
 
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import NurseHeader from '@/components/nurse/NurseHeader'
 import QueueList from '@/components/nurse/QueueList'
-import EmergencyAlerts from '@/components/nurse/EmergencyAlerts'
 
 export default function NurseDashboard() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [isSessionReady, setIsSessionReady] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
@@ -20,6 +20,10 @@ export default function NurseDashboard() {
     if (session?.user?.role !== 'nurse') {
       router.push('/login')
       return
+    }
+    // Wait for session to have user ID
+    if (session?.user?.id) {
+      setIsSessionReady(true)
     }
   }, [session, status, router])
 
@@ -62,16 +66,16 @@ export default function NurseDashboard() {
         </div>
 
         {/* Dashboard Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Queue Management - Takes 2/3 of the space */}
-          <div className="lg:col-span-2">
-            <QueueList />
-          </div>
-          
-          {/* Emergency Alerts - Takes 1/3 of the space */}
-          <div className="lg:col-span-1">
-            <EmergencyAlerts />
-          </div>
+        <div>
+          {isSessionReady ? (
+            <QueueList nurseId={session!.user!.id!} />
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+              <div className="text-yellow-600 text-lg mb-2">⚠️</div>
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">Session Loading</h3>
+              <p className="text-yellow-700">Waiting for user ID to load. Please wait a moment...</p>
+            </div>
+          )}
         </div>
       </main>
     </div>

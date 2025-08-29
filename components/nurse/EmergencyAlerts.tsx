@@ -172,59 +172,98 @@ export default function EmergencyAlerts() {
             </div>
           ) : (
             emergencyVisits.map((visit) => (
-              <div key={visit._id} className="px-6 py-4 bg-red-50 border-l-4 border-red-400 hover:bg-red-100 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h4 className="text-sm font-medium text-red-900">{visit.name}</h4>
-                      <span className="text-xs text-red-600">ID: {visit.studentId}</span>
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                        🚨 Emergency
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(visit.queueStatus)}`}>
-                        {visit.queueStatus.replace('-', ' ')}
-                      </span>
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(visit.priority)}`}>
-                        {visit.priority}
-                      </span>
-                      {visit.estimatedWaitTime && visit.estimatedWaitTime > 0 && (
-                        <span className="text-xs text-red-600">
-                          ⏱️ {visit.estimatedWaitTime} min wait
+              <div key={visit._id} className="p-4 sm:p-6 bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 hover:from-red-100 hover:to-red-200 transition-all duration-300 shadow-sm hover:shadow-md">
+                {/* Enhanced Emergency Case Card Design */}
+                <div className="space-y-4">
+                  {/* Top Section - Patient Info & Emergency Badge */}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      {/* Patient Name and ID Row */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                        <h4 className="text-base sm:text-lg font-bold text-red-900 truncate">
+                          {visit.name}
+                        </h4>
+                        <span className="text-sm text-red-700 flex-shrink-0 bg-red-200 px-3 py-1.5 rounded-lg font-mono font-semibold">
+                          ID: {visit.studentId}
                         </span>
-                      )}
+                      </div>
+                      
+                      {/* Enhanced Emergency Badge */}
+                      <div className="mb-3">
+                        <span className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-bold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg border border-red-300 w-full sm:w-auto justify-center sm:justify-start">
+                          🚨 EMERGENCY CASE - IMMEDIATE ATTENTION REQUIRED
+                        </span>
+                      </div>
                     </div>
                     
-                    <div className="mb-2">
-                      <p className="text-xs text-red-700">
-                        <span className="font-medium">Symptoms:</span> {visit.symptoms.join(', ')}
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-xs text-red-500">
-                      <span>Arrived: {new Date(visit.createdAt).toLocaleTimeString()}</span>
-                      {visit.mobile && (
-                        <span>📱 {visit.mobile}</span>
-                      )}
+                    {/* Priority Indicator - Right Side */}
+                    <div className="flex-shrink-0">
+                      <span className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-bold border-2 ${getPriorityColor(visit.priority)}`}>
+                        {visit.priority.toUpperCase()}
+                      </span>
                     </div>
                   </div>
+                  
+                  {/* Status Row - Enhanced with Icons */}
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <span className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold border-2 ${getStatusColor(visit.queueStatus)}`}>
+                      <span className="mr-2 text-lg">
+                        {visit.queueStatus === 'waiting' ? '⏳' : visit.queueStatus === 'in-progress' ? '🔄' : '✅'}
+                      </span>
+                      {visit.queueStatus.replace('-', ' ').toUpperCase()}
+                    </span>
+                    
+                    {visit.estimatedWaitTime && visit.estimatedWaitTime > 0 && (
+                      <span className="inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold bg-red-200 text-red-800 border border-red-300">
+                        ⏱️ {visit.estimatedWaitTime} min wait
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Symptoms Section - Enhanced Readability */}
+                  <div className="bg-white/60 rounded-lg p-3 sm:p-4 border border-red-200">
+                    <div className="flex items-start gap-2 mb-3">
+                      <span className="text-lg">🏥</span>
+                      <h5 className="text-sm font-bold text-red-800">Symptoms</h5>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {visit.symptoms.map((symptom, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-300 shadow-sm">
+                          {symptom}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Info Section - Arrival Time and Contact */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-red-600">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🕒</span>
+                      <span className="font-medium">Arrived: {new Date(visit.createdAt).toLocaleTimeString()}</span>
+                    </div>
+                    {visit.mobile && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">📱</span>
+                        <span className="font-mono font-semibold">{visit.mobile}</span>
+                      </div>
+                    )}
+                  </div>
 
-                  <div className="flex items-center space-x-2 ml-4">
+                  {/* Action Buttons - Enhanced Design */}
+                  <div className="flex flex-col sm:flex-row items-stretch gap-3 pt-3 border-t border-red-200">
                     {visit.queueStatus === 'waiting' && (
                       <>
                         <button
                           onClick={() => handleAction(visit, 'start')}
-                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                          className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-bold rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                         >
-                          Start Treatment
+                          🚀 Start Emergency Treatment
                         </button>
                         <button
                           onClick={() => handleAction(visit, 'complete')}
-                          className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                          className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                         >
-                          Complete
+                          ✅ Complete
                         </button>
                       </>
                     )}
@@ -232,14 +271,17 @@ export default function EmergencyAlerts() {
                     {visit.queueStatus === 'in-progress' && (
                       <button
                         onClick={() => handleAction(visit, 'complete')}
-                        className="px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                        className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
                       >
-                        Complete
+                        ✅ Complete Emergency Treatment
                       </button>
                     )}
                     
                     {visit.queueStatus === 'completed' && (
-                      <span className="text-xs text-green-600 font-medium">✓ Completed</span>
+                      <div className="w-full text-center px-6 py-3 bg-gradient-to-r from-green-50 to-green-100 text-green-700 font-bold rounded-lg border-2 border-green-300">
+                        <span className="text-lg mr-2">🎉</span>
+                        Emergency Case Completed Successfully
+                      </div>
                     )}
                   </div>
                 </div>

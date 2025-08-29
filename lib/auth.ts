@@ -80,16 +80,29 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('🔄 JWT callback:', { token: token.sub, user: user?.role })
+      console.log('🔄 JWT callback:', { 
+        tokenSub: token.sub, 
+        userRole: user?.role,
+        userId: user?.id
+      })
       if (user) {
+        token.id = user.id
         token.role = user.role
         token.studentId = user.studentId
+        console.log('✅ Token updated with:', { id: token.id, role: token.role, studentId: token.studentId })
       }
       return token
     },
     async session({ session, token }) {
-      console.log('🔄 Session callback:', { session: session.user?.email, token: token.role })
+      console.log('🔄 Session callback:', { 
+        session: session.user?.email, 
+        tokenRole: token.role,
+        tokenId: token.id,
+        tokenSub: token.sub
+      })
       if (token) {
+        // Use token.sub as the user ID if token.id is not available
+        session.user.id = token.id || token.sub
         session.user.role = token.role
         session.user.studentId = token.studentId
       }

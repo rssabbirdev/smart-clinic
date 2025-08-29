@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { dbConnect } from '@/lib/mongodb'
 import Visit from '@/models/Visit'
+import User from '@/models/User'
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,8 +44,27 @@ export async function GET(request: NextRequest) {
       .skip((page - 1) * limit)
       .lean()
 
+    // Populate assignedNurseName for cases that don't have it yet
+    const visitsWithNames = await Promise.all(
+      visits.map(async (visit: any) => {
+        if (visit.assignedNurse && !visit.assignedNurseName) {
+          try {
+            const nurse = await User.findById(visit.assignedNurse)
+            if (nurse) {
+              visit.assignedNurseName = nurse.name
+              // Update the visit in database to include the name
+              await Visit.findByIdAndUpdate(visit._id, { assignedNurseName: nurse.name })
+            }
+          } catch (error) {
+            console.error('Error fetching nurse name:', error)
+          }
+        }
+        return visit
+      })
+    )
+
     // Calculate queue position for each visit
-    const visitsWithPosition = visits.map((visit: any, index) => {
+    const visitsWithPosition = visitsWithNames.map((visit: any, index) => {
       const queuePosition = (page - 1) * limit + index + 1
       return {
         ...visit,
@@ -121,7 +141,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { visitId, action, notes } = body
+    const { visitId, action, notes, nurseId } = body
 
     if (!visitId || !action) {
       return NextResponse.json(
@@ -136,6 +156,18 @@ export async function PATCH(request: NextRequest) {
       case 'start':
         updateData.queueStatus = 'in-progress'
         updateData.notes = notes
+        if (nurseId) {
+          updateData.assignedNurse = nurseId
+          // Fetch nurse name
+          try {
+            const nurse = await User.findById(nurseId)
+            if (nurse) {
+              updateData.assignedNurseName = nurse.name
+            }
+          } catch (error) {
+            console.error('Error fetching nurse name:', error)
+          }
+        }
         break
       case 'complete':
         updateData.queueStatus = 'completed'

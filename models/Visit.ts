@@ -12,6 +12,8 @@ export interface IVisit extends Document {
   priority: 'low' | 'medium' | 'high' | 'emergency'
   estimatedWaitTime?: number
   notes?: string
+  assignedNurse?: string
+  assignedNurseName?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -66,6 +68,14 @@ const visitSchema = new Schema<IVisit>({
     type: String,
     trim: true,
   },
+  assignedNurse: {
+    type: String,
+    trim: true,
+  },
+  assignedNurseName: {
+    type: String,
+    trim: true,
+  },
 }, {
   timestamps: true,
 })
@@ -76,6 +86,7 @@ visitSchema.index({ emergencyFlag: 1, createdAt: 1 })
 visitSchema.index({ studentId: 1, createdAt: -1 })
 visitSchema.index({ userId: 1, createdAt: -1 })
 visitSchema.index({ priority: 1, createdAt: 1 })
+visitSchema.index({ assignedNurse: 1, queueStatus: 1 })
 
 // Virtual for queue position (calculated field)
 visitSchema.virtual('queuePosition').get(function() {

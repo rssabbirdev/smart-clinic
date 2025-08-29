@@ -180,9 +180,9 @@ export async function GET(request: NextRequest) {
 
     if (session?.user) {
       userInfo = {
-        name: session.user.name,
-        studentId: session.user.studentId,
-        userId: session.user.id,
+        name: session.user.name || '',
+        studentId: session.user.studentId || '',
+        userId: session.user.id || '',
       }
     } else if (guestSessionToken) {
       const guestSession = await GuestSession.findOne({ 
