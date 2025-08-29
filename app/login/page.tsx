@@ -52,11 +52,38 @@ export default function LoginPage() {
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 text-center">
           <div className="text-6xl mb-4">🏥</div>
           <h1 className="text-3xl font-bold">SmartClinic</h1>
-          <p className="text-blue-100 mt-2">Admin & Nurse Portal</p>
+          <p className="text-blue-100 mt-2">Staff Portal - Admin & Nurse Access</p>
+          <div className="mt-3 text-blue-200 text-sm">
+            <span className="inline-flex items-center px-2 py-1 bg-blue-500 bg-opacity-30 rounded-full">
+              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              Staff Only
+            </span>
+          </div>
+        </div>
+
+        {/* Return to Home Button for Students */}
+        <div className="px-8 pt-6 pb-4">
+          <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 text-center shadow-sm">
+            <div className="text-2xl mb-2">👨‍🎓</div>
+            <p className="text-yellow-800 text-sm mb-3">
+              <strong>Student?</strong> If you're not a staff member, click below to return to the main page.
+            </p>
+            <a
+              href="/"
+              className="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 hover:scale-105 transition-all duration-200 shadow-md"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Return to Home
+            </a>
+          </div>
         </div>
 
         {/* Login Form */}
-        <div className="p-8">
+        <div className="px-8 pb-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
@@ -108,12 +135,12 @@ export default function LoginPage() {
           </form>
 
           {/* Info Section */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-blue-800 mb-2">Access Information</h3>
+              <h3 className="text-sm font-semibold text-blue-800 mb-2">Staff Access Only</h3>
               <p className="text-xs text-blue-600">
-                This portal is for authorized healthcare staff only. 
-                Please use your assigned credentials to access the system.
+                This portal is for authorized healthcare staff (nurses & administrators) only. 
+                Students should use the main page for check-in.
               </p>
             </div>
             

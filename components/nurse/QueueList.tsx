@@ -41,6 +41,10 @@ export default function QueueList({ nurseId }: QueueListProps) {
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     end: new Date().toISOString().split('T')[0] // today
   })
+  
+  // Background update indicator
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date())
+  const [hasNewUpdates, setHasNewUpdates] = useState(false)
 
   // Validate nurseId
   if (!nurseId) {
@@ -312,12 +316,84 @@ export default function QueueList({ nurseId }: QueueListProps) {
     }
   }, [activeTab])
 
-  // Add auto-refresh to ensure real-time updates (only for today's cases)
+  // Background check for new cases (only for today's cases)
   useEffect(() => {
     if (activeTab === 'today') {
-      const interval = setInterval(() => {
-        fetchQueueData()
-      }, 10000) // Refresh every 10 seconds
+      const interval = setInterval(async () => {
+        try {
+          // Silent background check - don't show loading state
+          const response = await fetch('/api/queue')
+          const data = await response.json()
+          
+          if (data.success) {
+            const visitsData = data.data?.visits || data.visits || []
+            
+            // Filter for today's cases only
+            const today = new Date()
+            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+            const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
+            
+            const todaysVisits = visitsData.filter((visit: Visit) => {
+              const visitDate = new Date(visit.createdAt)
+              return visitDate >= todayStart && visitDate < todayEnd
+            })
+            
+            // Only update state if there are new cases or changes
+            setVisits(prevVisits => {
+              // Quick check: if counts are different, there are definitely changes
+              if (prevVisits.length !== todaysVisits.length) {
+                console.log(`Background check: New cases detected. Previous: ${prevVisits.length}, Current: ${todaysVisits.length}`)
+                setHasNewUpdates(true)
+                setLastUpdateTime(new Date())
+                // Clear the indicator after 5 seconds
+                setTimeout(() => setHasNewUpdates(false), 5000)
+                return todaysVisits
+              }
+              
+              // Check for new cases by looking for IDs that don't exist in previous visits
+              const newCaseIds = todaysVisits.map((v: Visit) => v._id)
+              const prevCaseIds = prevVisits.map((v: Visit) => v._id)
+              const hasNewCases = newCaseIds.some((id: string) => !prevCaseIds.includes(id))
+              
+              if (hasNewCases) {
+                console.log('Background check: New case IDs detected')
+                setHasNewUpdates(true)
+                setLastUpdateTime(new Date())
+                // Clear the indicator after 5 seconds
+                setTimeout(() => setHasNewUpdates(false), 5000)
+                return todaysVisits
+              }
+              
+              // Check if any existing cases have been updated (status, assignment, notes, etc.)
+              const hasUpdates = todaysVisits.some((newVisit: Visit) => {
+                const existingVisit = prevVisits.find(v => v._id === newVisit._id)
+                if (!existingVisit) return false
+                
+                return existingVisit.queueStatus !== newVisit.queueStatus ||
+                       existingVisit.assignedNurse !== newVisit.assignedNurse ||
+                       existingVisit.assignedNurseName !== newVisit.assignedNurseName ||
+                       existingVisit.notes !== newVisit.notes ||
+                       existingVisit.updatedAt !== newVisit.updatedAt
+              })
+              
+              if (hasUpdates) {
+                console.log('Background check: Case updates detected')
+                setHasNewUpdates(true)
+                setLastUpdateTime(new Date())
+                // Clear the indicator after 5 seconds
+                setTimeout(() => setHasNewUpdates(false), 5000)
+                return todaysVisits
+              }
+              
+              // No changes detected, keep existing state (no unnecessary re-renders)
+              return prevVisits
+            })
+          }
+        } catch (error) {
+          // Silent error handling for background checks
+          console.error('Background check failed:', error)
+        }
+      }, 10000) // Check every 10 seconds
 
       return () => clearInterval(interval)
     }
@@ -381,6 +457,11 @@ export default function QueueList({ nurseId }: QueueListProps) {
               }`}
             >
               📅 Today's Cases
+              {hasNewUpdates && activeTab === 'today' && (
+                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 animate-pulse">
+                  🔄 New
+                </span>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('all')}
@@ -404,26 +485,18 @@ export default function QueueList({ nurseId }: QueueListProps) {
             </button>
           </nav>
         </div>
-      </div>
-
-      {/* Assignment System Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <span className="text-blue-600 text-lg">ℹ️</span>
-          <div>
-            <h4 className="font-semibold text-blue-800 mb-1">Case Assignment System</h4>
-            <p className="text-sm text-blue-700">
-              When you start treatment on a case, it becomes assigned to you and is hidden from other nurses. 
-              Each nurse only sees their own active and completed cases in the Processing and Completed columns.
-            </p>
-            <p className="text-xs text-blue-600 mt-2">
-              <strong>Your Nurse ID:</strong> {nurseId}
-            </p>
-            <p className="text-xs text-blue-600">
-              <strong>Note:</strong> Cases now show assigned nurse names instead of just IDs for better readability
-            </p>
+        
+        {/* Background Check Status */}
+        {activeTab === 'today' && (
+          <div className="px-6 py-2 bg-gray-50 text-xs text-gray-500 flex items-center justify-between">
+            <span>
+              🔄 Background check active (every 10 seconds)
+            </span>
+            <span>
+              Last update: {lastUpdateTime.toLocaleTimeString()}
+            </span>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Advanced Filters for All Cases and History Tabs */}
@@ -1006,12 +1079,13 @@ export default function QueueList({ nurseId }: QueueListProps) {
                     >
                       🚀 Start Treatment
                     </button>
-                    <button
+                    {/* No Need: no need to complete the case for pending cases*/}
+                    {/* <button
                       onClick={() => updateQueueStatus(selectedVisit._id, 'completed')}
                       className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     >
                       ✅ Complete
-                    </button>
+                    </button> */}
                   </>
                 )}
                 
