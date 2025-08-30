@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store'
-import { AdminHeader } from './AdminHeader'
-import { UserManagement } from './UserManagement'
+import AdminHeader from './AdminHeader'
+import UserManagement from './UserManagement'
 import { SystemReports } from './SystemReports'
 import { SystemSettings } from './SystemSettings'
 

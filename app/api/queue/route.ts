@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     // Check if user is authenticated and has appropriate role
     const session = await getServerSession(authOptions)
     
-    if (!session?.user || !['nurse', 'admin'].includes(session.user.role)) {
+    if (!session?.user || !session.user.role || !['nurse', 'admin'].includes(session.user.role)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized access' },
         { status: 401 }
@@ -133,7 +133,7 @@ export async function PATCH(request: NextRequest) {
     // Check if user is authenticated and has appropriate role
     const session = await getServerSession(authOptions)
     
-    if (!session?.user || !['nurse', 'admin'].includes(session.user.role)) {
+    if (!session?.user || !session.user.role || !['nurse', 'admin'].includes(session.user.role)) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized access' },
         { status: 401 }
