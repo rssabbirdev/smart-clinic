@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
     const { name, studentId, role, email, mobile, class: studentClass, password } = body
 
     // Debug logging
-    console.log('Creating user with data:', { name, studentId, role, email, mobile, class: studentClass, password })
 
     // Validate required fields
     if (!name || !studentId || !role || !password) {
@@ -91,19 +90,11 @@ export async function POST(request: NextRequest) {
       password, // Will be hashed by the pre-save middleware
     }
     
-    console.log('Creating User model with data:', userData)
     
     const user = new User(userData)
 
     await user.save()
     
-    console.log('User saved successfully. Saved user data:', {
-      _id: user._id,
-      name: user.name,
-      studentId: user.studentId,
-      class: user.class,
-      role: user.role
-    })
 
     // Return user without password
     const userResponse = user.toObject()

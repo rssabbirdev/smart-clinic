@@ -180,7 +180,6 @@ export default function QueueList({ nurseId }: QueueListProps) {
           setSelectedVisit(null)
           setNotes('')
           
-          console.log('Status updated successfully')
         }
       } else {
         console.error('Failed to update status')
@@ -376,7 +375,6 @@ export default function QueueList({ nurseId }: QueueListProps) {
             setVisits(prevVisits => {
               // Quick check: if counts are different, there are definitely changes
               if (prevVisits.length !== todaysVisits.length) {
-                console.log(`Background check: New cases detected. Previous: ${prevVisits.length}, Current: ${todaysVisits.length}`)
                 setHasNewUpdates(true)
                 setLastUpdateTime(new Date())
                 // Clear the indicator after 5 seconds
@@ -390,7 +388,6 @@ export default function QueueList({ nurseId }: QueueListProps) {
               const hasNewCases = newCaseIds.some((id: string) => !prevCaseIds.includes(id))
               
               if (hasNewCases) {
-                console.log('Background check: New case IDs detected')
                 setHasNewUpdates(true)
                 setLastUpdateTime(new Date())
                 // Clear the indicator after 5 seconds
@@ -411,7 +408,6 @@ export default function QueueList({ nurseId }: QueueListProps) {
               })
               
               if (hasUpdates) {
-                console.log('Background check: Case updates detected')
                 setHasNewUpdates(true)
                 setLastUpdateTime(new Date())
                 // Clear the indicator after 5 seconds

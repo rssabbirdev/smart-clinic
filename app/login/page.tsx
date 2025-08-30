@@ -18,7 +18,6 @@ export default function LoginPage() {
     setError('')
 
     try {
-      console.log('Attempting login with:', { email, password: '***' })
       
       const result = await signIn('credentials', {
         email,
@@ -26,19 +25,16 @@ export default function LoginPage() {
         redirect: false,
       })
 
-      console.log('SignIn result:', result)
 
       if (result?.error) {
         setError('Invalid email or password')
         console.error('Login error:', result.error)
       } else if (result?.ok) {
-        console.log('Login successful, redirecting...')
         // Redirect based on user role
         // The role will be determined by the session callback in auth.ts
         router.push('/dashboard')
       }
     } catch (error) {
-      console.error('Login exception:', error)
       setError('An error occurred. Please try again.')
     } finally {
       setIsLoading(false)

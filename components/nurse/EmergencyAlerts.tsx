@@ -86,7 +86,6 @@ export default function EmergencyAlerts() {
           setShowActionModal(false)
           setSelectedVisit(null)
           
-          console.log('Action completed successfully')
         }
       } else {
         console.error('Failed to complete action')

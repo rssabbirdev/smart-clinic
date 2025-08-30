@@ -11,51 +11,37 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        console.log('🔐 Auth attempt for email:', credentials?.email)
         
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing credentials')
           return null
         }
 
         try {
-          console.log('🔌 Connecting to database...')
           await dbConnect()
-          console.log('✅ Database connected')
           
           // Import User model dynamically to avoid issues
           let User
           try {
             User = (await import('@/models/User')).default
-            console.log('✅ User model imported successfully')
           } catch (importError) {
             console.error('❌ Failed to import User model:', importError)
             return null
           }
           
-          console.log('🔍 Searching for user with email:', credentials.email)
           const user = await User.findOne({ 
             email: credentials.email,
             role: { $in: ['admin', 'nurse'] } // Only allow admin and nurse login
           })
 
           if (!user) {
-            console.log('❌ User not found or not admin/nurse')
             return null
           }
 
-          console.log('✅ User found:', { 
-            name: user.name, 
-            role: user.role, 
-            hasPassword: !!user.password 
-          })
 
           // Use the bcrypt comparePassword method from the User model
-          console.log('🔐 Comparing passwords...')
           const isPasswordValid = await user.comparePassword(credentials.password)
           
           if (isPasswordValid) {
-            console.log('✅ Password valid, returning user')
             return {
               id: user._id.toString(),
               email: user.email,
@@ -65,7 +51,6 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
-          console.log('❌ Invalid password')
           return null
         } catch (error) {
           console.error('❌ Auth error:', error)
@@ -80,26 +65,14 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('🔄 JWT callback:', { 
-        tokenSub: token.sub, 
-        userRole: user?.role,
-        userId: user?.id
-      })
       if (user) {
         token.id = user.id
         token.role = user.role
         token.studentId = user.studentId
-        console.log('✅ Token updated with:', { id: token.id, role: token.role, studentId: token.studentId })
       }
       return token
     },
     async session({ session, token }) {
-      console.log('🔄 Session callback:', { 
-        session: session.user?.email, 
-        tokenRole: token.role,
-        tokenId: token.id,
-        tokenSub: token.sub
-      })
       if (token) {
         // Use token.sub as the user ID if token.id is not available
         session.user.id = token.id || token.sub

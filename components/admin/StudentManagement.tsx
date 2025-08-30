@@ -68,14 +68,11 @@ export default function StudentManagement() {
       return
     }
 
-    // Debug logging
-    console.log('Form data being sent:', formData)
     const requestBody = {
       ...formData,
       role: 'student',
       password: 'default123' // Default password for students
     }
-    console.log('Request body being sent:', requestBody)
 
     setIsSubmitting(true)
     setError('')
@@ -419,7 +416,6 @@ export default function StudentManagement() {
                   value={formData.class}
                   onChange={(e) => {
                     const newValue = e.target.value
-                    console.log('Add Modal - Class field changed to:', newValue)
                     setFormData({ ...formData, class: newValue })
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -508,7 +504,6 @@ export default function StudentManagement() {
                   value={formData.class}
                   onChange={(e) => {
                     const newValue = e.target.value
-                    console.log('Edit Modal - Class field changed to:', newValue)
                     setFormData({ ...formData, class: newValue })
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
