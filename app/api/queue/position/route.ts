@@ -29,17 +29,50 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Check if the visit is older than 1 hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
+    const isVisitOld = currentVisit.createdAt < oneHourAgo
+
+    // If visit is older than 1 hour, allow re-check-in
+    if (isVisitOld) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Visit expired',
+          canRecheckIn: true,
+          message: 'Your previous visit has expired. You can check in again.'
+        },
+        { status: 200 }
+      )
+    }
+
     // Count total waiting patients
     const totalWaiting = await Visit.countDocuments({
       queueStatus: 'waiting'
     })
 
-    // Calculate queue position (how many people are ahead)
-    const queuePosition = await Visit.countDocuments({
-      queueStatus: 'waiting',
-      createdAt: { $lt: currentVisit.createdAt }
-    })
-
+    // Calculate queue position considering priority and emergency flags
+    // Emergency cases and higher priority cases go first
+    let queuePosition = 0
+    
+    // Get all waiting visits sorted by priority
+    const waitingVisits = await Visit.find({ queueStatus: 'waiting' })
+      .sort({ 
+        emergencyFlag: -1,  // Emergency cases first
+        priority: -1,       // Higher priority first (Emergency > High > Medium > Low)
+        createdAt: 1        // Earlier check-ins first for same priority
+      })
+      .lean()
+    
+    // Find the position of current visit in the sorted queue
+    for (let i = 0; i < waitingVisits.length; i++) {
+      const visit = waitingVisits[i] as any
+      if (visit._id.toString() === currentVisit._id.toString()) {
+        queuePosition = i
+        break
+      }
+    }
+    
     // Queue number is position + 1
     const queueNumber = queuePosition + 1
 

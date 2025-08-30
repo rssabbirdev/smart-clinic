@@ -86,29 +86,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already has an active visit
+    // Check if user already has an active visit (less than 1 hour old)
     const existingVisit = await Visit.findOne({
       studentId: userInfo.studentId,
-      queueStatus: 'waiting'
+      queueStatus: { $in: ['waiting', 'in-progress'] }
     })
 
     if (existingVisit) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'already_in_queue',
-          existingVisit: {
-            id: existingVisit._id,
-            name: existingVisit.name,
-            studentId: existingVisit.studentId,
-            priority: existingVisit.priority,
-            symptoms: existingVisit.symptoms,
-            emergencyFlag: existingVisit.emergencyFlag,
-            createdAt: existingVisit.createdAt
-          }
-        },
-        { status: 400 }
-      )
+      // Check if the visit is older than 1 hour
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
+      const isVisitOld = existingVisit.createdAt < oneHourAgo
+
+      if (isVisitOld) {
+        // Visit is older than 1 hour, silently delete it and allow new check-in
+        await Visit.findByIdAndDelete(existingVisit._id)
+        // Continue with creating new visit below
+      } else {
+        // Visit is still active (less than 1 hour old)
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'already_in_queue',
+            existingVisit: {
+              id: existingVisit._id,
+              name: existingVisit.name,
+              studentId: existingVisit.studentId,
+              priority: existingVisit.priority,
+              symptoms: existingVisit.symptoms,
+              emergencyFlag: existingVisit.emergencyFlag,
+              createdAt: existingVisit.createdAt
+            }
+          },
+          { status: 400 }
+        )
+      }
     }
 
     // Map severity to priority

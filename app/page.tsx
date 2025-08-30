@@ -13,6 +13,7 @@ export default function LandingPage() {
 		useState(false);
 	const [queueInfo, setQueueInfo] = useState<any>(null);
 	const [countdown, setCountdown] = useState(30);
+
 	const [manualForm, setManualForm] = useState({
 		name: '',
 		class: '',
@@ -26,12 +27,17 @@ export default function LandingPage() {
 		{ id: 'stomach', label: 'Stomach Pain', icon: '🫃' },
 		{ id: 'injury', label: 'Injury', icon: '🩹' },
 		{ id: 'dizziness', label: 'Dizziness', icon: '💫' },
+		{ id: 'others', label: 'Others (Not Included)', icon: '📝' },
 	];
 
 	const severityLevels = ['Low', 'Medium', 'High', 'Emergency'];
 	const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
 	const [severity, setSeverity] = useState('');
 	const [emergencyFlag, setEmergencyFlag] = useState(false);
+	
+	// Custom symptoms state
+	const [showCustomSymptomsModal, setShowCustomSymptomsModal] = useState(false);
+	const [customSymptoms, setCustomSymptoms] = useState('');
 
 	// ——— NEW: UI-only step state ———
 	const [step, setStep] = useState(1);
@@ -51,6 +57,11 @@ export default function LandingPage() {
 
 	// Handlers (unchanged)
 	const handleSymptomToggle = (symptomId: string) => {
+		if (symptomId === 'others') {
+			setShowCustomSymptomsModal(true);
+			return;
+		}
+		
 		setSelectedSymptoms((prev) =>
 			prev.includes(symptomId)
 				? prev.filter((s) => s !== symptomId)
@@ -61,11 +72,22 @@ export default function LandingPage() {
 	const handleSeveritySelect = (level: string) => {
 		setSeverity(level);
 	};
+	
+	const handleCustomSymptomsSubmit = () => {
+		if (customSymptoms.trim()) {
+			// Add custom symptoms to selected symptoms
+			setSelectedSymptoms(prev => [...prev, 'custom']);
+			setShowCustomSymptomsModal(false);
+			// Don't clear customSymptoms - we need it for display and API
+		}
+	};
 
 	const handleStudentIdSearch = async () => {
 		if (!studentId.trim()) return;
 		setIsLoading(true);
+		
 		try {
+			// Check if they're currently in queue
 			const queueResponse = await fetch(
 				`/api/queue/position?studentId=${studentId}`
 			);
@@ -83,6 +105,7 @@ export default function LandingPage() {
 				return;
 			}
 
+			// Get student info from database
 			const response = await fetch(
 				`/api/students/search?studentId=${studentId}`
 			);
@@ -122,7 +145,23 @@ export default function LandingPage() {
 			return;
 		}
 
+		// Special validation for custom symptoms
+		if (selectedSymptoms.includes('custom') && !customSymptoms.trim()) {
+			alert('Please describe your custom symptom');
+			return;
+		}
+
+		// Set loading state
+		setIsLoading(true);
+
 		try {
+			// Prepare symptoms data - include custom symptoms if selected
+			let symptomsData = [...selectedSymptoms];
+			if (selectedSymptoms.includes('custom')) {
+				symptomsData = selectedSymptoms.filter(s => s !== 'custom');
+				symptomsData.push(`Custom: ${customSymptoms}`);
+			}
+
 			const response = await fetch('/api/check-in', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -131,7 +170,7 @@ export default function LandingPage() {
 					name: studentInfo.name,
 					class: studentInfo.class,
 					mobile: studentInfo.mobile,
-					symptoms: selectedSymptoms,
+					symptoms: symptomsData,
 					severity,
 					emergencyFlag,
 					isGuest: studentInfo.isGuest || false,
@@ -174,6 +213,8 @@ export default function LandingPage() {
 			}
 		} catch (error) {
 			alert('Check-in failed. Please try again.');
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
@@ -208,15 +249,74 @@ export default function LandingPage() {
 		setSeverity('');
 		setEmergencyFlag(false);
 		setManualForm({ name: '', class: '', mobile: '' });
+		setCustomSymptoms('');
 		setCountdown(30);
 		setStep(1); // reset UI flow
 	};
 
 	const canCheckIn = () => {
-		return (
-			studentInfo && selectedSymptoms.length > 0 && severity && !isLoading
-		);
+		// Check if we have basic requirements
+		if (!studentInfo || !severity || isLoading) return false;
+		
+		// Check if we have symptoms (including custom)
+		if (selectedSymptoms.length === 0) return false;
+		
+		// If custom symptom is selected, make sure we have the description
+		if (selectedSymptoms.includes('custom') && !customSymptoms.trim()) return false;
+		
+		// Allow check-in if it's a new student OR if they can re-check-in (expired visit)
+		return true;
 	};
+
+	// Custom Symptoms Modal
+	if (showCustomSymptomsModal) {
+		return (
+			<div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+				<div className='bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden'>
+					<div className='bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 text-center'>
+						<div className='text-6xl mb-4'>📝</div>
+						<h2 className='text-2xl font-bold'>
+							Describe Your Symptom
+						</h2>
+						<p className='text-purple-100'>
+							Please tell us what you're experiencing
+						</p>
+					</div>
+					
+					<div className='p-6 space-y-6'>
+						<div>
+							<label className='block text-sm font-medium text-gray-700 mb-2'>
+								What is the symptom?
+							</label>
+							<textarea
+								value={customSymptoms}
+								onChange={(e) => setCustomSymptoms(e.target.value)}
+								placeholder='Describe your symptom in detail...'
+								className='w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none'
+								rows={3}
+							/>
+						</div>
+						
+						<div className='flex gap-3'>
+							<button
+								onClick={() => setShowCustomSymptomsModal(false)}
+								className='w-1/3 py-3 border-2 border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors'
+							>
+								Cancel
+							</button>
+							<button
+								onClick={handleCustomSymptomsSubmit}
+								disabled={!customSymptoms.trim()}
+								className='w-2/3 py-3 bg-purple-600 text-white rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50 transition-colors'
+							>
+								Submit
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		);
+	}
 
 	// ——— Modals (unchanged) ———
 	if (showSuccessModal && queueInfo) {
@@ -265,7 +365,7 @@ export default function LandingPage() {
 										People Ahead:
 									</span>
 									<span className='font-semibold'>
-										{queueInfo.totalWaiting - 1}
+										{queueInfo.queueNumber - 1}
 									</span>
 								</div>
 								<div className='flex justify-between items-center'>
@@ -356,7 +456,7 @@ export default function LandingPage() {
 										People Ahead:
 									</span>
 									<span className='font-semibold'>
-										{queueInfo.totalWaiting - 1}
+										{queueInfo.queueNumber - 1}
 									</span>
 								</div>
 								<div className='flex justify-between items-center'>
@@ -488,6 +588,8 @@ export default function LandingPage() {
 						<h2 className='text-xl font-semibold mb-4'>
 							Confirm your details
 						</h2>
+
+
 
 						{studentInfo && (
 							<div className='text-left bg-green-50 border border-green-200 rounded-xl p-4'>
@@ -628,6 +730,19 @@ export default function LandingPage() {
 								);
 							})}
 						</div>
+						
+						{/* Display selected custom symptoms if any */}
+						{selectedSymptoms.includes('custom') && (
+							<div className='mt-4 p-4 bg-purple-50 border-2 border-purple-200 rounded-xl'>
+								<h4 className='font-semibold text-purple-800 mb-2 text-center'>📝 Custom Symptom</h4>
+								<div className='space-y-2 text-sm'>
+									<div>
+										<strong className='text-purple-700'>Symptom:</strong>
+										<p className='text-purple-600 mt-1'>{customSymptoms}</p>
+									</div>
+								</div>
+							</div>
+						)}
 
 						<div className='flex gap-3 mt-6'>
 							<button
@@ -715,7 +830,14 @@ export default function LandingPage() {
 								disabled={!canCheckIn()}
 								className='w-2/3 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200 shadow-lg'
 							>
-								✅ Check In
+								{isLoading ? (
+									<div className="flex items-center justify-center gap-2">
+										<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+										Processing...
+									</div>
+								) : (
+									'✅ Check In'
+								)}
 							</button>
 						</div>
 					</>

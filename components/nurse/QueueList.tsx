@@ -239,67 +239,101 @@ export default function QueueList({ nurseId }: QueueListProps) {
     }
   }
 
-  // Filter visits for each column (today's cases)
-  const pendingVisits = visits.filter(visit => 
-    visit.queueStatus === 'waiting' && !visit.assignedNurse
-  )
+  // Filter visits for each column (today's cases) - sorted by queue order
+  const pendingVisits = visits
+    .filter(visit => visit.queueStatus === 'waiting' && !visit.assignedNurse)
+    .sort((a, b) => {
+      // Sort by priority first (emergency > high > medium > low)
+      const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
+      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 0) - 
+                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 0)
+      
+      if (priorityDiff !== 0) return -priorityDiff // Higher priority first
+      
+      // Then by arrival time (first come, first served)
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
   
-  const processingVisits = visits.filter(visit => 
-    visit.queueStatus === 'in-progress' && visit.assignedNurse === nurseId
-  )
+  const processingVisits = visits
+    .filter(visit => visit.queueStatus === 'in-progress' && visit.assignedNurse === nurseId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
   
-  const completedVisits = visits.filter(visit => 
-    visit.queueStatus === 'completed' && visit.assignedNurse === nurseId
-  )
+  const completedVisits = visits
+    .filter(visit => visit.queueStatus === 'completed' && visit.assignedNurse === nurseId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Most recent first
 
   // Filter all cases based on filters
-  const filteredAllCases = visits.filter(visit => {
-    // Status filter
-    if (statusFilter !== 'all' && visit.queueStatus !== statusFilter) return false
-    
-    // Priority filter
-    if (priorityFilter !== 'all' && visit.priority !== priorityFilter) return false
-    
-    // Emergency filter
-    if (emergencyFilter !== null && visit.emergencyFlag !== emergencyFilter) return false
-    
-    // Search term filter
-    if (searchTerm && !visit.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !visit.studentId.toLowerCase().includes(searchTerm.toLowerCase())) return false
-    
-    // Date range filter
-    const visitDate = new Date(visit.createdAt)
-    const startDate = new Date(dateRange.start)
-    const endDate = new Date(dateRange.end)
-    endDate.setHours(23, 59, 59) // Include end date
-    
-    if (visitDate < startDate || visitDate > endDate) return false
-    
-    return true
-  })
+  const filteredAllCases = visits
+    .filter(visit => {
+      // Status filter
+      if (statusFilter !== 'all' && visit.queueStatus !== statusFilter) return false
+      
+      // Priority filter
+      if (priorityFilter !== 'all' && visit.priority !== priorityFilter) return false
+      
+      // Emergency filter
+      if (emergencyFilter !== null && visit.emergencyFlag !== emergencyFilter) return false
+      
+      // Search term filter
+      if (searchTerm && !visit.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+          !visit.studentId.toLowerCase().includes(searchTerm.toLowerCase())) return false
+      
+      // Date range filter
+      const visitDate = new Date(visit.createdAt)
+      const startDate = new Date(dateRange.start)
+      const endDate = new Date(dateRange.end)
+      endDate.setHours(23, 59, 59) // Include end date
+      
+      if (visitDate < startDate || visitDate > endDate) return false
+      
+      return true
+    })
+    .sort((a, b) => {
+      // Sort by priority first (emergency > high > medium > low)
+      const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
+      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 0) - 
+                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 0)
+      
+      if (priorityDiff !== 0) return -priorityDiff // Higher priority first
+      
+      // Then by arrival time (first come, first served)
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
 
   // Filter my history cases
-  const filteredMyHistory = visits.filter(visit => {
-    // Only show cases assigned to this nurse
-    if (visit.assignedNurse !== nurseId) return false
-    
-    // Apply other filters
-    if (statusFilter !== 'all' && visit.queueStatus !== statusFilter) return false
-    if (priorityFilter !== 'all' && visit.priority !== priorityFilter) return false
-    if (emergencyFilter !== null && visit.emergencyFlag !== emergencyFilter) return false
-    if (searchTerm && !visit.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-        !visit.studentId.toLowerCase().includes(searchTerm.toLowerCase())) return false
-    
-    // Date range filter
-    const visitDate = new Date(visit.createdAt)
-    const startDate = new Date(dateRange.start)
-    const endDate = new Date(dateRange.end)
-    endDate.setHours(23, 59, 59)
-    
-    if (visitDate < startDate || visitDate > endDate) return false
-    
-    return true
-  })
+  const filteredMyHistory = visits
+    .filter(visit => {
+      // Only show cases assigned to this nurse
+      if (visit.assignedNurse !== nurseId) return false
+      
+      // Apply other filters
+      if (statusFilter !== 'all' && visit.queueStatus !== statusFilter) return false
+      if (priorityFilter !== 'all' && visit.priority !== priorityFilter) return false
+      if (emergencyFilter !== null && visit.emergencyFlag !== emergencyFilter) return false
+      if (searchTerm && !visit.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
+          !visit.studentId.toLowerCase().includes(searchTerm.toLowerCase())) return false
+      
+      // Date range filter
+      const visitDate = new Date(visit.createdAt)
+      const startDate = new Date(dateRange.start)
+      const endDate = new Date(dateRange.end)
+      endDate.setHours(23, 59, 59)
+      
+      if (visitDate < startDate || visitDate > endDate) return false
+      
+      return true
+    })
+    .sort((a, b) => {
+      // Sort by priority first (emergency > high > medium > low)
+      const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
+      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 0) - 
+                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 0)
+      
+      if (priorityDiff !== 0) return -priorityDiff // Higher priority first
+      
+      // Then by arrival time (first come, first served)
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
 
   // Handle tab changes and fetch appropriate data
   useEffect(() => {
@@ -399,14 +433,45 @@ export default function QueueList({ nurseId }: QueueListProps) {
     }
   }, [activeTab])
 
-  // Calculate today's statistics
-  const stats = {
-    total: visits.length,
-    pending: pendingVisits.length,
-    processing: processingVisits.length,
-    completed: completedVisits.length,
-    emergency: visits.filter(v => v.emergencyFlag).length
+  // Calculate statistics based on active tab
+  const getStats = () => {
+    switch (activeTab) {
+      case 'today':
+        return {
+          total: visits.length,
+          pending: pendingVisits.length,
+          processing: processingVisits.length,
+          completed: completedVisits.length,
+          emergency: visits.filter(v => v.emergencyFlag).length
+        }
+      case 'all':
+        return {
+          total: filteredAllCases.length,
+          pending: filteredAllCases.filter(v => v.queueStatus === 'waiting').length,
+          processing: filteredAllCases.filter(v => v.queueStatus === 'in-progress').length,
+          completed: filteredAllCases.filter(v => v.queueStatus === 'completed').length,
+          emergency: filteredAllCases.filter(v => v.emergencyFlag).length
+        }
+      case 'history':
+        return {
+          total: filteredMyHistory.length,
+          pending: filteredMyHistory.filter(v => v.queueStatus === 'waiting').length,
+          processing: filteredMyHistory.filter(v => v.queueStatus === 'in-progress').length,
+          completed: filteredMyHistory.filter(v => v.queueStatus === 'completed').length,
+          emergency: filteredMyHistory.filter(v => v.emergencyFlag).length
+        }
+      default:
+        return {
+          total: 0,
+          pending: 0,
+          processing: 0,
+          completed: 0,
+          emergency: 0
+        }
+    }
   }
+
+  const stats = getStats()
 
   if (isLoading) {
     return (
@@ -604,7 +669,7 @@ export default function QueueList({ nurseId }: QueueListProps) {
         </div>
       )}
 
-      {/* Today's Statistics Cards */}
+      {/* Dynamic Statistics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
         <div className="bg-white rounded-lg shadow p-3 sm:p-4 border-l-4 border-blue-500">
           <div className="flex items-center">
@@ -612,7 +677,10 @@ export default function QueueList({ nurseId }: QueueListProps) {
               <span className="text-lg sm:text-xl">📅</span>
             </div>
             <div className="ml-2 sm:ml-3 min-w-0 flex-1">
-              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">Today's Total</p>
+              <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">
+                {activeTab === 'today' ? "Today's Total" : 
+                 activeTab === 'all' ? "All Cases Total" : "My Cases Total"}
+              </p>
               <p className="text-lg sm:text-2xl font-bold text-blue-600">{stats.total}</p>
             </div>
           </div>
