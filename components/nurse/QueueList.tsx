@@ -42,6 +42,13 @@ export default function QueueList({ nurseId }: QueueListProps) {
     end: new Date().toISOString().split('T')[0] // today
   })
   
+  // Advanced filtering and sorting states
+  const [symptomFilter, setSymptomFilter] = useState<string>('all')
+  const [assignedNurseFilter, setAssignedNurseFilter] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<string>('priority')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
+  
   // Background update indicator
   const [lastUpdateTime, setLastUpdateTime] = useState<Date>(new Date())
   const [hasNewUpdates, setHasNewUpdates] = useState(false)
@@ -238,32 +245,93 @@ export default function QueueList({ nurseId }: QueueListProps) {
     }
   }
 
-  // Filter visits for each column (today's cases) - sorted by queue order
-  const pendingVisits = visits
-    .filter(visit => visit.queueStatus === 'waiting' && !visit.assignedNurse)
-    .sort((a, b) => {
-      // Sort by priority first (emergency > high > medium > low)
-      const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
-      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 0) - 
-                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 0)
+  // Helper functions for advanced filtering
+  const getAllUniqueSymptoms = () => {
+    const allSymptoms = visits.flatMap(visit => visit.symptoms)
+    return [...new Set(allSymptoms)].sort()
+  }
+
+  const getAllUniqueNurses = () => {
+    const nurses = visits
+      .filter(visit => visit.assignedNurseName)
+      .map(visit => ({ id: visit.assignedNurse, name: visit.assignedNurseName }))
+    const uniqueNurses = nurses.filter((nurse, index, self) => 
+      index === self.findIndex(n => n.id === nurse.id)
+    )
+    return uniqueNurses.sort((a, b) => a.name!.localeCompare(b.name!))
+  }
+
+  // Advanced sorting function
+  const sortVisits = (visitsToSort: Visit[]) => {
+    return [...visitsToSort].sort((a, b) => {
+      let comparison = 0
       
-      if (priorityDiff !== 0) return -priorityDiff // Higher priority first
+      switch (sortBy) {
+        case 'priority':
+          const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
+          const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0
+          const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0
+          comparison = aPriority - bPriority
+          break
+        case 'symptom':
+          const aSymptoms = a.symptoms.join(', ').toLowerCase()
+          const bSymptoms = b.symptoms.join(', ').toLowerCase()
+          comparison = aSymptoms.localeCompare(bSymptoms)
+          break
+        case 'name':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'studentId':
+          comparison = a.studentId.localeCompare(b.studentId)
+          break
+        case 'createdAt':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          break
+        case 'updatedAt':
+          comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+          break
+        case 'status':
+          const statusOrder = { waiting: 1, 'in-progress': 2, completed: 3 }
+          const aStatus = statusOrder[a.queueStatus as keyof typeof statusOrder] || 0
+          const bStatus = statusOrder[b.queueStatus as keyof typeof statusOrder] || 0
+          comparison = aStatus - bStatus
+          break
+        case 'emergency':
+          comparison = (a.emergencyFlag ? 1 : 0) - (b.emergencyFlag ? 1 : 0)
+          break
+        default:
+          comparison = 0
+      }
       
-      // Then by arrival time (first come, first served)
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      return sortOrder === 'asc' ? comparison : -comparison
     })
+  }
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setStatusFilter('all')
+    setPriorityFilter('all')
+    setEmergencyFilter(null)
+    setSearchTerm('')
+    setSymptomFilter('all')
+    setAssignedNurseFilter('all')
+    setDateRange({
+      start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end: new Date().toISOString().split('T')[0]
+    })
+    setSortBy('priority')
+    setSortOrder('desc')
+  }
+
+  // Filter visits for each column (today's cases) - sorted by queue order
+  const pendingVisits = sortVisits(visits.filter(visit => visit.queueStatus === 'waiting' && !visit.assignedNurse))
   
-  const processingVisits = visits
-    .filter(visit => visit.queueStatus === 'in-progress' && visit.assignedNurse === nurseId)
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  const processingVisits = sortVisits(visits.filter(visit => visit.queueStatus === 'in-progress' && visit.assignedNurse === nurseId))
   
-  const completedVisits = visits
-    .filter(visit => visit.queueStatus === 'completed' && visit.assignedNurse === nurseId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Most recent first
+  const completedVisits = sortVisits(visits.filter(visit => visit.queueStatus === 'completed' && visit.assignedNurse === nurseId))
 
   // Filter all cases based on filters
-  const filteredAllCases = visits
-    .filter(visit => {
+  const filteredAllCases = sortVisits(visits.filter(visit => {
       // Status filter
       if (statusFilter !== 'all' && visit.queueStatus !== statusFilter) return false
       
@@ -277,6 +345,16 @@ export default function QueueList({ nurseId }: QueueListProps) {
       if (searchTerm && !visit.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
           !visit.studentId.toLowerCase().includes(searchTerm.toLowerCase())) return false
       
+      // Symptom filter
+      if (symptomFilter !== 'all' && !visit.symptoms.some(symptom => 
+          symptom.toLowerCase().includes(symptomFilter.toLowerCase()))) return false
+      
+      // Assigned nurse filter
+      if (assignedNurseFilter !== 'all') {
+        if (assignedNurseFilter === 'unassigned' && visit.assignedNurse) return false
+        if (assignedNurseFilter !== 'unassigned' && visit.assignedNurse !== assignedNurseFilter) return false
+      }
+      
       // Date range filter
       const visitDate = new Date(visit.createdAt)
       const startDate = new Date(dateRange.start)
@@ -286,22 +364,10 @@ export default function QueueList({ nurseId }: QueueListProps) {
       if (visitDate < startDate || visitDate > endDate) return false
       
       return true
-    })
-    .sort((a, b) => {
-      // Sort by priority first (emergency > high > medium > low)
-      const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
-      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 0) - 
-                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 0)
-      
-      if (priorityDiff !== 0) return -priorityDiff // Higher priority first
-      
-      // Then by arrival time (first come, first served)
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    })
+    }))
 
   // Filter my history cases
-  const filteredMyHistory = visits
-    .filter(visit => {
+  const filteredMyHistory = sortVisits(visits.filter(visit => {
       // Only show cases assigned to this nurse
       if (visit.assignedNurse !== nurseId) return false
       
@@ -312,6 +378,10 @@ export default function QueueList({ nurseId }: QueueListProps) {
       if (searchTerm && !visit.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
           !visit.studentId.toLowerCase().includes(searchTerm.toLowerCase())) return false
       
+      // Symptom filter
+      if (symptomFilter !== 'all' && !visit.symptoms.some(symptom => 
+          symptom.toLowerCase().includes(symptomFilter.toLowerCase()))) return false
+      
       // Date range filter
       const visitDate = new Date(visit.createdAt)
       const startDate = new Date(dateRange.start)
@@ -321,18 +391,7 @@ export default function QueueList({ nurseId }: QueueListProps) {
       if (visitDate < startDate || visitDate > endDate) return false
       
       return true
-    })
-    .sort((a, b) => {
-      // Sort by priority first (emergency > high > medium > low)
-      const priorityOrder = { emergency: 4, high: 3, medium: 2, low: 1 }
-      const priorityDiff = (priorityOrder[a.priority as keyof typeof priorityOrder] || 0) - 
-                          (priorityOrder[b.priority as keyof typeof priorityOrder] || 0)
-      
-      if (priorityDiff !== 0) return -priorityDiff // Higher priority first
-      
-      // Then by arrival time (first come, first served)
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    })
+    }))
 
   // Handle tab changes and fetch appropriate data
   useEffect(() => {
@@ -560,14 +619,32 @@ export default function QueueList({ nurseId }: QueueListProps) {
         )}
       </div>
 
-      {/* Advanced Filters for All Cases and History Tabs */}
+      {/* Advanced Filters and Sorting for All Cases and History Tabs */}
       {(activeTab === 'all' || activeTab === 'history') && (
         <div className="bg-white rounded-lg shadow border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Advanced Filters & Sorting</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className="px-3 py-1.5 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors"
+              >
+                {showAdvancedFilters ? '🔽 Hide Advanced' : '🔼 Show Advanced'}
+              </button>
+              <button
+                onClick={clearAllFilters}
+                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                🗑️ Clear All
+              </button>
+            </div>
+          </div>
+
+          {/* Basic Filters - Always Visible */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {/* Search Term */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">🔍 Search</label>
               <input
                 type="text"
                 placeholder="Name or Student ID"
@@ -579,38 +656,38 @@ export default function QueueList({ nurseId }: QueueListProps) {
 
             {/* Status Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">📊 Status</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Status</option>
-                <option value="waiting">Waiting</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
+                <option value="waiting">⏳ Waiting</option>
+                <option value="in-progress">🔄 In Progress</option>
+                <option value="completed">✅ Completed</option>
               </select>
             </div>
 
             {/* Priority Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">⚡ Priority</label>
               <select
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Priority</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="emergency">Emergency</option>
+                <option value="low">🟢 Low</option>
+                <option value="medium">🟡 Medium</option>
+                <option value="high">🔴 High</option>
+                <option value="emergency">🚨 Emergency</option>
               </select>
             </div>
 
             {/* Emergency Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Emergency</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">🚨 Emergency</label>
               <select
                 value={emergencyFilter === null ? 'all' : emergencyFilter.toString()}
                 onChange={(e) => {
@@ -623,44 +700,146 @@ export default function QueueList({ nurseId }: QueueListProps) {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All Cases</option>
-                <option value="true">Emergency Only</option>
-                <option value="false">Non-Emergency Only</option>
+                <option value="true">🚨 Emergency Only</option>
+                <option value="false">✅ Non-Emergency Only</option>
               </select>
-            </div>
-
-            {/* Start Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* End Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
             </div>
           </div>
 
+          {/* Advanced Filters - Collapsible */}
+          {showAdvancedFilters && (
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                {/* Symptom Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">🩺 Symptom</label>
+                  <select
+                    value={symptomFilter}
+                    onChange={(e) => setSymptomFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Symptoms</option>
+                    {getAllUniqueSymptoms().map(symptom => (
+                      <option key={symptom} value={symptom}>{symptom}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Assigned Nurse Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">👩‍⚕️ Assigned Nurse</label>
+                  <select
+                    value={assignedNurseFilter}
+                    onChange={(e) => setAssignedNurseFilter(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="all">All Nurses</option>
+                    <option value="unassigned">❌ Unassigned</option>
+                    {getAllUniqueNurses().map(nurse => (
+                      <option key={nurse.id} value={nurse.id}>{nurse.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Start Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">📅 Start Date</label>
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                {/* End Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">📅 End Date</label>
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Sorting Options */}
+              <div className="border-t pt-4">
+                <h4 className="text-md font-semibold text-gray-800 mb-3">🔄 Sorting Options</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="priority">⚡ Priority</option>
+                      <option value="symptom">🩺 Symptom</option>
+                      <option value="name">👤 Name</option>
+                      <option value="studentId">🆔 Student ID</option>
+                      <option value="createdAt">📅 Creation Date</option>
+                      <option value="updatedAt">🔄 Modification Date</option>
+                      <option value="status">📊 Status</option>
+                      <option value="emergency">🚨 Emergency</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort Order</label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="desc">⬇️ Descending (High to Low)</option>
+                      <option value="asc">⬆️ Ascending (Low to High)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      onClick={() => {
+                        setSortBy('priority')
+                        setSortOrder('desc')
+                      }}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                    >
+                      🔄 Reset to Default
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Filter Summary */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-600">
-              <strong>Results:</strong> {activeTab === 'all' ? filteredAllCases.length : filteredMyHistory.length} cases found
-              {searchTerm && ` • Search: "${searchTerm}"`}
-              {statusFilter !== 'all' && ` • Status: ${statusFilter}`}
-              {priorityFilter !== 'all' && ` • Priority: ${priorityFilter}`}
-              {emergencyFilter !== null && ` • Emergency: ${emergencyFilter ? 'Yes' : 'No'}`}
-              {` • Date Range: ${dateRange.start} to ${dateRange.end}`}
-            </p>
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800">
+                  📊 <strong>Results:</strong> {activeTab === 'all' ? filteredAllCases.length : filteredMyHistory.length} cases found
+                </p>
+                <div className="text-xs text-gray-600 mt-1">
+                  {searchTerm && `🔍 Search: "${searchTerm}"`}
+                  {statusFilter !== 'all' && ` • 📊 Status: ${statusFilter}`}
+                  {priorityFilter !== 'all' && ` • ⚡ Priority: ${priorityFilter}`}
+                  {emergencyFilter !== null && ` • 🚨 Emergency: ${emergencyFilter ? 'Yes' : 'No'}`}
+                  {symptomFilter !== 'all' && ` • 🩺 Symptom: ${symptomFilter}`}
+                  {assignedNurseFilter !== 'all' && ` • 👩‍⚕️ Nurse: ${assignedNurseFilter === 'unassigned' ? 'Unassigned' : 'Assigned'}`}
+                  {` • 📅 Date: ${dateRange.start} to ${dateRange.end}`}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-800">
+                  🔄 Sorted by: <span className="text-blue-600">{sortBy}</span>
+                </p>
+                <p className="text-xs text-gray-600">
+                  Order: <span className="text-blue-600">{sortOrder === 'asc' ? 'Ascending' : 'Descending'}</span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -730,6 +909,36 @@ export default function QueueList({ nurseId }: QueueListProps) {
           </div>
         </div>
       </div>
+
+      {/* Quick Sort for Today's Cases */}
+      {activeTab === 'today' && (
+        <div className="bg-white rounded-lg shadow border p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-md font-semibold text-gray-800">🔄 Quick Sort Options</h3>
+            <div className="flex gap-2">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="priority">⚡ Priority</option>
+                <option value="createdAt">📅 Arrival Time</option>
+                <option value="name">👤 Name</option>
+                <option value="symptom">🩺 Symptom</option>
+                <option value="emergency">🚨 Emergency</option>
+              </select>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="desc">⬇️ High to Low</option>
+                <option value="asc">⬆️ Low to High</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTab === 'today' && (

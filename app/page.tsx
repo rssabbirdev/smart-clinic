@@ -478,6 +478,10 @@ export default function LandingPage() {
 						</div>
 
 						<div className='space-y-3 mb-6'>
+							<span className='text-red-600 text-sm text-center mt-2'>
+								Please do not mark as emergency unless its
+								emergency!
+							</span>
 							<button
 								onClick={handleEmergency}
 								className='w-full bg-red-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:bg-red-700 transition-colors'
@@ -507,12 +511,22 @@ export default function LandingPage() {
 		<div className='min-h-screen bg-gray-100 flex items-center justify-center p-6 relative'>
 			{/* Floating Staff Login Button */}
 			<a
-				href="/login"
-				className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-40"
-				title="Staff Login"
+				href='/login'
+				className='fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110 z-40'
+				title='Staff Login'
 			>
-				<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+				<svg
+					className='w-6 h-6'
+					fill='none'
+					stroke='currentColor'
+					viewBox='0 0 24 24'
+				>
+					<path
+						strokeLinecap='round'
+						strokeLinejoin='round'
+						strokeWidth={2}
+						d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'
+					/>
 				</svg>
 			</a>
 
@@ -522,9 +536,13 @@ export default function LandingPage() {
 					<div className='mx-auto h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center text-3xl mb-4 shadow-lg'>
 						🏥
 					</div>
-					<h1 className='text-3xl font-bold text-gray-800'>Welcome to SmartClinic</h1>
-					<p className='text-gray-600 mt-2'>Student Health Check-in System</p>
-					
+					<h1 className='text-3xl font-bold text-gray-800'>
+						Welcome to SmartClinic
+					</h1>
+					<p className='text-gray-600 mt-2'>
+						Student Health Check-in System
+					</p>
+
 					{/* Step Indicator */}
 					<div className='flex justify-center mt-6'>
 						<div className='flex items-center space-x-2'>
@@ -559,7 +577,11 @@ export default function LandingPage() {
 							onChange={(e) => setStudentId(e.target.value)}
 							placeholder='Enter Student ID'
 							className='w-full mt-4 px-4 py-4 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center text-lg font-medium'
-							onKeyPress={(e) => e.key === 'Enter' && studentId.trim() && handleStudentIdSearch()}
+							onKeyPress={(e) =>
+								e.key === 'Enter' &&
+								studentId.trim() &&
+								handleStudentIdSearch()
+							}
 						/>
 						<button
 							onClick={async () => {
@@ -571,8 +593,8 @@ export default function LandingPage() {
 							className='w-full mt-6 py-4 bg-blue-600 text-white rounded-xl font-semibold text-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200'
 						>
 							{isLoading ? (
-								<div className="flex items-center justify-center gap-2">
-									<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+								<div className='flex items-center justify-center gap-2'>
+									<div className='animate-spin rounded-full h-5 w-5 border-b-2 border-white'></div>
 									Searching...
 								</div>
 							) : (
@@ -588,8 +610,6 @@ export default function LandingPage() {
 						<h2 className='text-xl font-semibold mb-4'>
 							Confirm your details
 						</h2>
-
-
 
 						{studentInfo && (
 							<div className='text-left bg-green-50 border border-green-200 rounded-xl p-4'>
@@ -628,7 +648,9 @@ export default function LandingPage() {
 
 						{showManualForm && (
 							<div className='space-y-4 text-left bg-yellow-50 border-2 border-yellow-200 rounded-xl p-5 mb-4'>
-								<h3 className='font-semibold text-yellow-800 mb-3 text-center'>📝 Manual Entry Required</h3>
+								<h3 className='font-semibold text-yellow-800 mb-3 text-center'>
+									📝 Manual Entry Required
+								</h3>
 								<div className='space-y-3'>
 									<input
 										type='text'
@@ -722,7 +744,9 @@ export default function LandingPage() {
 												: 'bg-gray-50 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
 										}`}
 									>
-										<div className='text-2xl mb-2'>{s.icon}</div>
+										<div className='text-2xl mb-2'>
+											{s.icon}
+										</div>
 										<div className='font-medium text-sm'>
 											{s.label}
 										</div>
@@ -730,15 +754,21 @@ export default function LandingPage() {
 								);
 							})}
 						</div>
-						
+
 						{/* Display selected custom symptoms if any */}
 						{selectedSymptoms.includes('custom') && (
 							<div className='mt-4 p-4 bg-purple-50 border-2 border-purple-200 rounded-xl'>
-								<h4 className='font-semibold text-purple-800 mb-2 text-center'>📝 Custom Symptom</h4>
+								<h4 className='font-semibold text-purple-800 mb-2 text-center'>
+									📝 Custom Symptom
+								</h4>
 								<div className='space-y-2 text-sm'>
 									<div>
-										<strong className='text-purple-700'>Symptom:</strong>
-										<p className='text-purple-600 mt-1'>{customSymptoms}</p>
+										<strong className='text-purple-700'>
+											Symptom:
+										</strong>
+										<p className='text-purple-600 mt-1'>
+											{customSymptoms}
+										</p>
 									</div>
 								</div>
 							</div>
@@ -765,7 +795,9 @@ export default function LandingPage() {
 				{/* STEP 4 — Severity + Emergency + Check In */}
 				{step === 4 && (
 					<>
-						<h2 className='text-xl font-semibold text-gray-800'>Symptom Severity</h2>
+						<h2 className='text-xl font-semibold text-gray-800'>
+							Symptom Severity
+						</h2>
 						<p className='text-gray-600 mt-2 mb-6'>
 							How would you rate the severity of your symptoms?
 						</p>
@@ -775,22 +807,31 @@ export default function LandingPage() {
 								const isSelected = severity === level;
 								const getLevelColor = (level: string) => {
 									switch (level) {
-										case 'Emergency': return 'border-red-500 hover:border-red-600 text-red-600 hover:text-red-700';
-										case 'High': return 'border-orange-500 hover:border-orange-600 text-orange-600 hover:text-orange-700';
-										case 'Medium': return 'border-yellow-500 hover:border-yellow-600 text-yellow-600 hover:text-yellow-700';
-										case 'Low': return 'border-green-500 hover:border-green-600 text-green-600 hover:text-green-700';
-										default: return 'border-gray-300 hover:border-blue-400 text-gray-700';
+										case 'Emergency':
+											return 'border-red-500 hover:border-red-600 text-red-600 hover:text-red-700';
+										case 'High':
+											return 'border-orange-500 hover:border-orange-600 text-orange-600 hover:text-orange-700';
+										case 'Medium':
+											return 'border-yellow-500 hover:border-yellow-600 text-yellow-600 hover:text-yellow-700';
+										case 'Low':
+											return 'border-green-500 hover:border-green-600 text-green-600 hover:text-green-700';
+										default:
+											return 'border-gray-300 hover:border-blue-400 text-gray-700';
 									}
 								};
-								
+
 								return (
 									<button
 										key={level}
-										onClick={() => handleSeveritySelect(level)}
+										onClick={() =>
+											handleSeveritySelect(level)
+										}
 										className={`w-full py-4 rounded-xl border-2 transition-all duration-200 font-medium text-lg ${
 											isSelected
 												? 'bg-blue-600 text-white border-blue-600 shadow-lg'
-												: `bg-white hover:bg-gray-50 ${getLevelColor(level)}`
+												: `bg-white hover:bg-gray-50 ${getLevelColor(
+														level
+												  )}`
 										}`}
 									>
 										{level}
@@ -814,7 +855,8 @@ export default function LandingPage() {
 								</span>
 							</label>
 							<p className='text-red-600 text-sm text-center mt-2'>
-								Check this if you need immediate medical attention
+								Please do not mark as emergency unless its
+								emergency!
 							</p>
 						</div>
 
@@ -831,8 +873,8 @@ export default function LandingPage() {
 								className='w-2/3 py-4 bg-green-600 text-white rounded-xl font-semibold text-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200 shadow-lg'
 							>
 								{isLoading ? (
-									<div className="flex items-center justify-center gap-2">
-										<div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+									<div className='flex items-center justify-center gap-2'>
+										<div className='animate-spin rounded-full h-5 w-5 border-b-2 border-white'></div>
 										Processing...
 									</div>
 								) : (
