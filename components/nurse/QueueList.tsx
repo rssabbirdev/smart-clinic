@@ -248,7 +248,7 @@ export default function QueueList({ nurseId }: QueueListProps) {
   // Helper functions for advanced filtering
   const getAllUniqueSymptoms = () => {
     const allSymptoms = visits.flatMap(visit => visit.symptoms)
-    return [...new Set(allSymptoms)].sort()
+    return Array.from(new Set(allSymptoms)).sort()
   }
 
   const getAllUniqueNurses = () => {
